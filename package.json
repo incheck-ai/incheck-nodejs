@@ -1,0 +1,59 @@
+{
+  "name": "@incheck/sdk",
+  "version": "0.1.0",
+  "description": "Node.js SDK for InCheck Platform",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types && npm run build:cjs:pkg",
+    "build:esm": "tsc -p tsconfig.build.esm.json",
+    "build:cjs": "tsc -p tsconfig.build.cjs.json",
+    "build:types": "tsc -p tsconfig.build.types.json",
+    "build:cjs:pkg": "printf '{\"type\":\"commonjs\"}\\n' > dist/cjs/package.json",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:integration": "vitest run -c vitest.integration.config.ts"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.29",
+    "typescript": "^5.8.3",
+    "vitest": "^4.1.6"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/incheck-ai/incheck-nodejs.git"
+  },
+  "homepage": "https://github.com/incheck-ai/incheck-nodejs#readme",
+  "bugs": {
+    "url": "https://github.com/incheck-ai/incheck-nodejs/issues"
+  },
+  "keywords": [
+    "incheck",
+    "sdk",
+    "nodejs",
+    "typescript",
+    "ai",
+    "healthcare"
+  ]
+}
