@@ -104,6 +104,7 @@ export class DocumentsResource {
       ...response,
       documents: response.documents.map((doc) => ({
         ...doc,
+        id: doc.id ?? doc.document_id,
         download_url: doc.download_url ?? doc.presigned_url
       }))
     };

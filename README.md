@@ -107,6 +107,33 @@ const docs = await client.documents.list("org_123");
 console.log(docs.documents[0]?.download_url);
 ```
 
+Current `documents.list` response shape (live API):
+
+```json
+{
+  "org_id": "org_id",
+  "version": "20260511_213242",
+  "document_count": 1,
+  "documents": [
+    {
+      "filename": "test_pdf_without_toc.pdf",
+      "size_bytes": 4364,
+      "last_modified": "2026-05-11T21:32:44+00:00",
+      "presigned_url": "https://...X-Amz-Expires=3600...",
+      "url_expires_in": 3600
+    }
+  ],
+  "job_id": "b248ff0c-e2e7-494c-a91e-5d14d2b6337a",
+  "s3_folder": "org_id/org_123/2026/05/11/20260511_213242"
+}
+```
+
+Notes:
+
+- `documents[].id` is not guaranteed by this endpoint.
+- SDK normalization ensures `documents[].download_url` falls back from `presigned_url`.
+- Presigned URLs are time-limited (`url_expires_in`, commonly `3600` seconds).
+
 ### Upload files
 
 ```ts

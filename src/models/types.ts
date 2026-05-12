@@ -63,14 +63,23 @@ export interface OrgListResponse {
 }
 
 export interface DocumentInfo {
+  id?: string;
+  document_id?: string;
   filename: string;
   content_type?: string;
+  size_bytes?: number;
+  last_modified?: string;
+  url_expires_in?: number;
   presigned_url?: string;
   download_url?: string;
 }
 
 export interface DocumentListResponse {
   org_id: string;
+  version?: string;
+  document_count?: number;
+  job_id?: string;
+  s3_folder?: string;
   documents: DocumentInfo[];
 }
 
