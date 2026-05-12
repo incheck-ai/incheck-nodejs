@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 - Presigned upload targets now accept both field conventions: `url`/`fields` and `upload_url`/`upload_fields`.
 - `documents.completeUpload` and `documents.completeUpdate` now send `uploaded_files` as `string[]` filenames (Python-compatible contract).
 - Removed stale `UploadedFileRef` type export.
+- `documents.list` now keeps `id` optional and no longer assumes document identifiers are always present in API payloads.
 
 ### Changed
 
@@ -19,6 +20,7 @@ All notable changes to this project will be documented in this file.
 - Default client timeout changed from `60_000ms` to `120_000ms` to match Python SDK behavior.
 - `documents.listOrgs` now supports Python-style response shape (`org_ids`, `total_count`, `filtered_by`) while preserving `orgs` for compatibility.
 - HTTP error message extraction now prioritizes `detail` (string or list) before `message`/`error`, matching Python behavior.
+- `documents.list` types now reflect the live endpoint metadata fields: `version`, `document_count`, `job_id`, `s3_folder`, plus per-document `size_bytes`, `last_modified`, and `url_expires_in`.
 
 ## [0.1.0] - 2026-05-12
 
