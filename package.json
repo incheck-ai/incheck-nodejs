@@ -1,6 +1,6 @@
 {
-  "name": "@incheck/sdk",
-  "version": "0.1.1",
+  "name": "@incheckai/sdk",
+  "version": "0.1.2",
   "description": "Node.js SDK for InCheck Platform",
   "license": "MIT",
   "type": "module",
