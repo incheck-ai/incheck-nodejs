@@ -5,13 +5,13 @@ TypeScript-first Node.js SDK for InCheck AI APIs.
 ## Install
 
 ```bash
-npm install @incheck/sdk
+npm install @incheckai/sdk
 # or
-pnpm add @incheck/sdk
+pnpm add @incheckai/sdk
 # or
-yarn add @incheck/sdk
+yarn add @incheckai/sdk
 # or
-bun add @incheck/sdk
+bun add @incheckai/sdk
 ```
 
 ## Requirements
@@ -28,7 +28,7 @@ An API key is required. Provide it in one of these ways:
 If neither is set, client initialization fails with a validation error.
 
 ```ts
-import { Client } from "@incheck/sdk";
+import { Client } from "@incheckai/sdk";
 
 // Option 1: pass apiKey explicitly
 const clientWithApiKey = new Client({
