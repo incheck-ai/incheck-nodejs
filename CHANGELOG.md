@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.1.5] - 2026-05-12
+
+### Fixed
+
+- Documents upload flow now accepts both initiate response shapes: `uploads` and `upload_urls`.
+- Presigned upload targets now accept both field conventions: `url`/`fields` and `upload_url`/`upload_fields`.
+- `documents.completeUpload` and `documents.completeUpdate` now send `uploaded_files` as `string[]` filenames (Python-compatible contract).
+- Removed stale `UploadedFileRef` type export.
+
+### Changed
+
+- Chat payloads now include explicit `streaming`:
+  - `chat.create` sends `streaming: false`
+  - `chat.stream` sends `streaming: true`
+- Default client timeout changed from `60_000ms` to `120_000ms` to match Python SDK behavior.
+- `documents.listOrgs` now supports Python-style response shape (`org_ids`, `total_count`, `filtered_by`) while preserving `orgs` for compatibility.
+- HTTP error message extraction now prioritizes `detail` (string or list) before `message`/`error`, matching Python behavior.
+
 ## [0.1.0] - 2026-05-12
 
 ### Added

@@ -7,7 +7,7 @@ import type {
 
 const PRODUCTION_BASE_URL = "https://api.incheck.ai";
 const STAGING_BASE_URL = "https://api-acceptance.incheck.ai";
-const DEFAULT_TIMEOUT_MS = 60_000;
+const DEFAULT_TIMEOUT_MS = 120_000;
 
 function resolveEnvironment(
   optionsEnvironment?: IncheckEnvironment,

@@ -19,7 +19,7 @@ export class ChatResource {
     const response = await this.http.requestRaw({
       method: "POST",
       path: "/chat",
-      body: this.buildPayload(payload.content, payload.options),
+      body: this.buildPayload(payload.content, payload.options, false),
       options: payload.options
     });
 
@@ -47,7 +47,7 @@ export class ChatResource {
     const response = await this.http.requestRaw({
       method: "POST",
       path: "/chat",
-      body: this.buildPayload(payload.content, payload.options),
+      body: this.buildPayload(payload.content, payload.options, true),
       options: payload.options
     });
 
@@ -95,12 +95,17 @@ export class ChatResource {
     }
   }
 
-  private buildPayload(content: string, options?: ChatRequestOptions): Record<string, unknown> {
+  private buildPayload(
+    content: string,
+    options: ChatRequestOptions | undefined,
+    streaming: boolean
+  ): Record<string, unknown> {
     const conversationId = options?.conversationId ?? randomUUID();
     const payload: Record<string, unknown> = {
       content,
       user_id: options?.userId ?? DEFAULT_USER_ID,
       conversation_id: conversationId,
+      streaming,
       scope: options?.scope ?? DEFAULT_SCOPE,
       state: options?.state ?? DEFAULT_STATE,
       conversation_hx: options?.conversationHx

@@ -34,6 +34,12 @@ describe("resolveClientConfig", () => {
     expect(cfg.baseUrl).toBe("https://api-acceptance.incheck.ai");
   });
 
+  it("uses 120s default timeout to match python", () => {
+    process.env.INCHECK_API_KEY = "env-key";
+    const cfg = resolveClientConfig({});
+    expect(cfg.timeoutMs).toBe(120_000);
+  });
+
   it("throws for invalid environment", () => {
     process.env.INCHECK_API_KEY = "env-key";
     process.env.INCHECK_ENVIRONMENT = "broken";

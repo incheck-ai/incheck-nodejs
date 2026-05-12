@@ -49,11 +49,17 @@ export interface DeleteDocumentResponse {
 
 export interface OrgInfo {
   org_id: string;
-  name?: string;
+  org_name?: string;
+  current_version?: string | null;
+  document_count?: number | null;
+  last_updated_at?: string | null;
 }
 
 export interface OrgListResponse {
-  orgs: OrgInfo[];
+  org_ids: Array<OrgInfo | string>;
+  total_count?: number;
+  filtered_by?: string;
+  orgs?: OrgInfo[];
 }
 
 export interface DocumentInfo {
@@ -81,16 +87,13 @@ export interface PresignedUpload {
 
 export interface UploadInitiated {
   job_id: string;
-  uploads: PresignedUpload[];
+  uploads?: PresignedUpload[];
+  upload_urls?: PresignedUpload[];
 }
 
 export interface UploadCompleted {
   job_id: string;
   status: string;
-}
-
-export interface UploadedFileRef {
-  filename: string;
 }
 
 export interface InlineUploadFile {

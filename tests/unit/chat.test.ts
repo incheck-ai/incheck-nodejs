@@ -46,6 +46,7 @@ describe("ChatResource", () => {
     const payload = capturedBody as Record<string, unknown>;
     expect(payload.content).toBe("Hi");
     expect(payload.user_id).toBe("sdk");
+    expect(payload.streaming).toBe(false);
     expect(payload.scope).toBe("ALS");
     expect(payload.state).toBe("Massachusetts");
     expect(payload).not.toHaveProperty("org_id");
@@ -54,6 +55,7 @@ describe("ChatResource", () => {
   });
 
   it("stream yields SSE chunks progressively", async () => {
+    let capturedBody: unknown;
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
         controller.enqueue(new TextEncoder().encode('data: {"content":"A"}\n'));
@@ -63,12 +65,14 @@ describe("ChatResource", () => {
       }
     });
 
-    const transport = buildTransport(async () =>
-      new Response(stream, {
+    const transport = buildTransport(async (input, init) => {
+      void input;
+      capturedBody = init?.body ? JSON.parse(String(init.body)) : undefined;
+      return new Response(stream, {
         status: 200,
         headers: { "content-type": "text/event-stream" }
-      })
-    );
+      });
+    });
 
     const chat = new ChatResource(transport);
     const chunks: string[] = [];
@@ -80,5 +84,7 @@ describe("ChatResource", () => {
     }
 
     expect(chunks.join("")).toBe("AB");
+    const payload = capturedBody as Record<string, unknown>;
+    expect(payload.streaming).toBe(true);
   });
 });

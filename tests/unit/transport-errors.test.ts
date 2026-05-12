@@ -35,6 +35,18 @@ describe("HttpTransport error mapping", () => {
     );
   });
 
+  it("prefers detail field for error message", async () => {
+    const transport = makeTransport(async () => new Response(JSON.stringify({ detail: "bad request detail" }), {
+      status: 400,
+      headers: { "content-type": "application/json" }
+    }));
+
+    await expect(transport.request({ method: "GET", path: "/x" })).rejects.toMatchObject({
+      constructor: IncheckValidationError,
+      message: "bad request detail"
+    });
+  });
+
   it("maps 403 to IncheckPermissionError", async () => {
     const transport = makeTransport(async () => new Response("nope", { status: 403 }));
     await expect(transport.request({ method: "GET", path: "/x" })).rejects.toBeInstanceOf(

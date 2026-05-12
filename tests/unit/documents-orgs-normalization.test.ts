@@ -26,21 +26,50 @@ function buildResource(payload: unknown): DocumentsResource {
 describe("DocumentsResource.listOrgs normalization", () => {
   it("returns orgs from orgs field", async () => {
     const docs = buildResource({ orgs: [{ org_id: "org-1" }] });
-    await expect(docs.listOrgs()).resolves.toEqual({ orgs: [{ org_id: "org-1" }] });
+    await expect(docs.listOrgs()).resolves.toEqual({
+      org_ids: [{ org_id: "org-1" }],
+      total_count: 1,
+      orgs: [{ org_id: "org-1" }]
+    });
   });
 
   it("maps organizations field to orgs", async () => {
     const docs = buildResource({ organizations: [{ org_id: "org-1" }] });
-    await expect(docs.listOrgs()).resolves.toEqual({ orgs: [{ org_id: "org-1" }] });
+    await expect(docs.listOrgs()).resolves.toEqual({
+      org_ids: [{ org_id: "org-1" }],
+      total_count: 1,
+      orgs: [{ org_id: "org-1" }]
+    });
   });
 
   it("maps data field to orgs", async () => {
     const docs = buildResource({ data: [{ org_id: "org-1" }] });
-    await expect(docs.listOrgs()).resolves.toEqual({ orgs: [{ org_id: "org-1" }] });
+    await expect(docs.listOrgs()).resolves.toEqual({
+      org_ids: [{ org_id: "org-1" }],
+      total_count: 1,
+      orgs: [{ org_id: "org-1" }]
+    });
   });
 
   it("maps root array to orgs", async () => {
     const docs = buildResource([{ org_id: "org-1" }]);
-    await expect(docs.listOrgs()).resolves.toEqual({ orgs: [{ org_id: "org-1" }] });
+    await expect(docs.listOrgs()).resolves.toEqual({
+      org_ids: [{ org_id: "org-1" }],
+      total_count: 1,
+      orgs: [{ org_id: "org-1" }]
+    });
+  });
+
+  it("passes through python-style org_ids response", async () => {
+    const payload = {
+      org_ids: [{ org_id: "org-1", org_name: "Acme" }],
+      total_count: 1,
+      filtered_by: "fastmedicalai"
+    };
+    const docs = buildResource(payload);
+    await expect(docs.listOrgs()).resolves.toEqual({
+      ...payload,
+      orgs: [{ org_id: "org-1", org_name: "Acme" }]
+    });
   });
 });
