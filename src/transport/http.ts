@@ -165,6 +165,15 @@ export class HttpTransport {
     if (!payload || typeof payload !== "object") {
       return undefined;
     }
+    if ("detail" in payload) {
+      const detail = payload.detail;
+      if (typeof detail === "string" && detail) {
+        return detail;
+      }
+      if (Array.isArray(detail) && detail.length > 0) {
+        return detail.map((item) => String(item)).join("; ");
+      }
+    }
     if ("message" in payload && typeof payload.message === "string") {
       return payload.message;
     }

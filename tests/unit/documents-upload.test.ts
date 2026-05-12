@@ -70,6 +70,27 @@ describe("DocumentsResource.upload", () => {
     expect(waitSpy).not.toHaveBeenCalled();
   });
 
+  it("accepts upload_urls field from initiate response", async () => {
+    const docs = buildResource(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 })));
+
+    vi.spyOn(docs, "initiateUpload").mockResolvedValue({
+      job_id: "job-2b",
+      upload_urls: [{ filename: "a.txt", url: "https://s3.local/upload-a", fields: {} }]
+    });
+    const completeSpy = vi
+      .spyOn(docs, "completeUpload")
+      .mockResolvedValue({ job_id: "job-2b", status: "processing" });
+
+    const result = await docs.upload(
+      "org-1",
+      [{ filename: "a.txt", data: new Uint8Array([1]) }],
+      { wait: false }
+    );
+
+    expect(result).toEqual({ job_id: "job-2b", status: "processing" });
+    expect(completeSpy).toHaveBeenCalledWith("job-2b", ["a.txt"], { wait: false });
+  });
+
   it("fails when presigned entry is missing", async () => {
     const docs = buildResource(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 })));
 

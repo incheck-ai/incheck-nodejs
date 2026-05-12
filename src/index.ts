@@ -26,7 +26,6 @@ export type {
   UploadDocumentRequest,
   UploadDocumentResponse,
   UploadOptions,
-  UploadedFileRef,
   VersionInfo
 } from "./models/types.js";
 

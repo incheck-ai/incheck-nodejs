@@ -13,7 +13,6 @@ import type {
   OrgInfo,
   OrgListResponse,
   RequestOptions,
-  UploadedFileRef,
   UploadCompleted,
   UploadInitiated,
   UploadOptions,
@@ -31,6 +30,11 @@ interface NormalizedUploadFile {
   data: Uint8Array;
 }
 
+interface ResolvedPresignedTarget {
+  url: string;
+  fields: Record<string, string>;
+}
+
 export class DocumentsResource {
   constructor(private readonly http: HttpTransport) {}
 
@@ -41,24 +45,52 @@ export class DocumentsResource {
       options
     });
 
+    if (response && typeof response === "object" && "org_ids" in response) {
+      const raw = response as Record<string, unknown>;
+      const orgIds = Array.isArray(raw.org_ids) ? (raw.org_ids as Array<OrgInfo | string>) : [];
+      const normalizedOrgs = orgIds
+        .filter((v): v is OrgInfo => typeof v === "object" && v !== null && "org_id" in v);
+      return {
+        ...(raw as unknown as OrgListResponse),
+        org_ids: orgIds,
+        orgs: normalizedOrgs
+      };
+    }
+
     if (Array.isArray(response)) {
-      return { orgs: response as OrgInfo[] };
+      return {
+        org_ids: response as OrgInfo[],
+        total_count: response.length,
+        orgs: response as OrgInfo[]
+      };
     }
 
     if (response && typeof response === "object") {
       const candidate = response as Record<string, unknown>;
       if (Array.isArray(candidate.orgs)) {
-        return { orgs: candidate.orgs as OrgInfo[] };
+        return {
+          org_ids: candidate.orgs as OrgInfo[],
+          total_count: candidate.orgs.length,
+          orgs: candidate.orgs as OrgInfo[]
+        };
       }
       if (Array.isArray(candidate.organizations)) {
-        return { orgs: candidate.organizations as OrgInfo[] };
+        return {
+          org_ids: candidate.organizations as OrgInfo[],
+          total_count: candidate.organizations.length,
+          orgs: candidate.organizations as OrgInfo[]
+        };
       }
       if (Array.isArray(candidate.data)) {
-        return { orgs: candidate.data as OrgInfo[] };
+        return {
+          org_ids: candidate.data as OrgInfo[],
+          total_count: candidate.data.length,
+          orgs: candidate.data as OrgInfo[]
+        };
       }
     }
 
-    return { orgs: [] };
+    return { org_ids: [], total_count: 0, orgs: [] };
   }
 
   async list(orgId: string, options?: RequestOptions): Promise<DocumentListResponse> {
@@ -104,7 +136,7 @@ export class DocumentsResource {
 
   async completeUpload(
     jobId: string,
-    uploadedFiles: UploadedFileRef[],
+    uploadedFiles: string[],
     options?: RequestOptions
   ): Promise<UploadCompleted> {
     this.assertJobId(jobId);
@@ -135,7 +167,7 @@ export class DocumentsResource {
   async completeUpdate(
     orgId: string,
     jobId: string,
-    uploadedFiles: UploadedFileRef[],
+    uploadedFiles: string[],
     options?: RequestOptions
   ): Promise<UploadCompleted> {
     this.assertOrgId(orgId);
@@ -224,7 +256,13 @@ export class DocumentsResource {
       options
     );
 
-    const uploadsByName = new Map(initiated.uploads.map((u) => [u.filename, u]));
+    const uploadEntries = initiated.uploads ?? initiated.upload_urls;
+    if (!Array.isArray(uploadEntries) || uploadEntries.length === 0) {
+      throw new IncheckValidationError(
+        "Missing presigned upload targets in initiate-upload response"
+      );
+    }
+    const uploadsByName = new Map(uploadEntries.map((u) => [u.filename, u]));
 
     for (const file of normalizedFiles) {
       const presigned = uploadsByName.get(file.filename);
@@ -234,12 +272,13 @@ export class DocumentsResource {
         );
       }
 
-      await this.uploadToPresignedUrl(presigned.url, presigned.fields, file, options);
+      const target = this.resolvePresignedTarget(presigned as unknown as Record<string, unknown>);
+      await this.uploadToPresignedUrl(target.url, target.fields, file, options);
     }
 
     const completed = await this.completeUpload(
       initiated.job_id,
-      normalizedFiles.map((f) => ({ filename: f.filename })),
+      normalizedFiles.map((f) => f.filename),
       options
     );
 
@@ -302,6 +341,23 @@ export class DocumentsResource {
         `Presigned upload failed for ${file.filename} with status ${response.status}`
       );
     }
+  }
+
+  private resolvePresignedTarget(raw: Record<string, unknown>): ResolvedPresignedTarget {
+    const urlCandidate = raw.url ?? raw.upload_url;
+    const fieldsCandidate = raw.fields ?? raw.upload_fields;
+
+    if (typeof urlCandidate !== "string" || !urlCandidate) {
+      throw new IncheckValidationError("Missing presigned upload url");
+    }
+    if (!fieldsCandidate || typeof fieldsCandidate !== "object") {
+      throw new IncheckValidationError("Missing presigned upload fields");
+    }
+
+    return {
+      url: urlCandidate,
+      fields: fieldsCandidate as Record<string, string>
+    };
   }
 
   private assertOrgId(orgId: string): void {
