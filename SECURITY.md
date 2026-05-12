@@ -1,9 +1,14 @@
 # Security Policy
 
-## Reporting a Vulnerability
+## Reporting a Security Vulnerability
 
-Open a [GitHub issue](https://github.com/raclip/raclip-nodejs/issues) with:
+If you discover a security vulnerability, please send an email to [EMAIL_ADDRESS] with "Security vulnerability" in the subject line.
 
-- A description of the vulnerability
+## Reporting a Bug
+
+Open a [GitHub issue](https://github.com/incheck-ai/incheck-nodejs/issues) with:
+
+- A description of the bug
 - Steps to reproduce
+- Expected behavior
 - Potential impact

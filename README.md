@@ -20,16 +20,25 @@ bun add @incheck/sdk
 
 ## Authentication
 
-Set your API key in either way:
+An API key is required. Provide it in one of these ways:
 
 - Constructor option: `apiKey`
 - Environment variable: `INCHECK_API_KEY`
 
+If neither is set, client initialization fails with a validation error.
+
 ```ts
 import { Client } from "@incheck/sdk";
 
+// Option 1: pass apiKey explicitly
+const clientWithApiKey = new Client({
+  apiKey: "your_api_key_here",
+  environment: "production"
+});
+
+// Option 2: omit apiKey and use INCHECK_API_KEY from environment
 const client = new Client({
-  apiKey: process.env.INCHECK_API_KEY
+  environment: "production"
 });
 ```
 
