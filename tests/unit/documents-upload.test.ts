@@ -70,12 +70,18 @@ describe("DocumentsResource.upload", () => {
     expect(waitSpy).not.toHaveBeenCalled();
   });
 
-  it("accepts upload_urls field from initiate response", async () => {
+  it("accepts python-style upload_urls with upload_url/upload_fields", async () => {
     const docs = buildResource(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 })));
 
     vi.spyOn(docs, "initiateUpload").mockResolvedValue({
       job_id: "job-2b",
-      upload_urls: [{ filename: "a.txt", url: "https://s3.local/upload-a", fields: {} }]
+      upload_urls: [
+        {
+          filename: "a.txt",
+          upload_url: "https://s3.local/upload-a",
+          upload_fields: {}
+        }
+      ]
     });
     const completeSpy = vi
       .spyOn(docs, "completeUpload")
@@ -89,6 +95,39 @@ describe("DocumentsResource.upload", () => {
 
     expect(result).toEqual({ job_id: "job-2b", status: "processing" });
     expect(completeSpy).toHaveBeenCalledWith("job-2b", ["a.txt"], { wait: false });
+  });
+
+  it("accepts Buffer, ArrayBuffer, and Blob inline file data", async () => {
+    const docs = buildResource(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 })));
+
+    vi.spyOn(docs, "initiateUpload").mockResolvedValue({
+      job_id: "job-flex",
+      uploads: [
+        { filename: "buffer.txt", url: "https://s3.local/upload-buffer", fields: {} },
+        { filename: "array-buffer.txt", url: "https://s3.local/upload-array-buffer", fields: {} },
+        { filename: "blob.txt", url: "https://s3.local/upload-blob", fields: {} }
+      ]
+    });
+    const completeSpy = vi
+      .spyOn(docs, "completeUpload")
+      .mockResolvedValue({ job_id: "job-flex", status: "processing" });
+
+    const result = await docs.upload(
+      "org-1",
+      [
+        { filename: "buffer.txt", data: Buffer.from("buffer") },
+        { filename: "array-buffer.txt", data: new Uint8Array([1, 2, 3]).buffer },
+        { filename: "blob.txt", data: new Blob(["blob"]) }
+      ],
+      { wait: false }
+    );
+
+    expect(result).toEqual({ job_id: "job-flex", status: "processing" });
+    expect(completeSpy).toHaveBeenCalledWith(
+      "job-flex",
+      ["buffer.txt", "array-buffer.txt", "blob.txt"],
+      { wait: false }
+    );
   });
 
   it("fails when presigned entry is missing", async () => {
@@ -122,6 +161,14 @@ describe("DocumentsResource.upload", () => {
 
     await expect(
       docs.upload("org-1", [{ filename: "empty.txt", data: new Uint8Array([]) }])
+    ).rejects.toBeInstanceOf(IncheckValidationError);
+  });
+
+  it("fails on empty Blob inline file", async () => {
+    const docs = buildResource(vi.fn<typeof fetch>().mockResolvedValue(new Response(null, { status: 204 })));
+
+    await expect(
+      docs.upload("org-1", [{ filename: "empty.txt", data: new Blob([]) }])
     ).rejects.toBeInstanceOf(IncheckValidationError);
   });
 });

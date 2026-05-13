@@ -1,6 +1,13 @@
 # InCheck Node.js SDK
 
-TypeScript-first Node.js SDK for InCheck AI APIs.
+The official Typescript NodeJS SDK for the [InCheck AI](https://incheck.ai) platform.
+Two operating modes, one client, typed end-to-end:
+
+- **EMS mode** — ask the model an EMS protocol question. No setup
+  required beyond an API key.
+- **Unified mode** — onboard one or more documents into a **Pod** (one
+  Pod per `org_id`), then chat against that Pod and the answers are
+  grounded in *your* content.
 
 ## Install
 
@@ -68,21 +75,34 @@ const client = new Client({
 - `Client` (alias)
 - `AsyncClient` (alias)
 
+Client resources:
+- `client.chat`
+- `client.documents`
+- `client.metadata`
+
 ## Chat (EMS / Unified)
 
 ### One-shot response
 
 ```ts
-const result = await client.chat.create({
-  content: "Summarize this patient note.",
-  options: {
-    orgId: "org_123", // optional; omit for EMS mode
-    userId: "user_42"
-  }
+const result = await client.chat.send("Summarize this patient note.", {
+  orgId: "org_123", // optional; omit for EMS mode
+  userId: "user_42"
 });
 
 console.log(result.content);
 ```
+
+`chat.send` options:
+- `orgId?: string | string[]` (omit for EMS mode)
+- `userId?: string` (default: `"sdk"`)
+- `conversationId?: string` (auto-generated UUID when omitted)
+- `scope?: string` (default: `"ALS"`)
+- `state?: string` (default: `"Massachusetts"`)
+- `messages?: Array<{ role, content }>`
+- `conversationHx?: string` (legacy history field)
+
+`chat.create({ content, options })` remains available as a backwards-compatible alias.
 
 ### Streaming response
 
@@ -93,6 +113,34 @@ for await (const chunk of client.chat.stream({
 })) {
   if (chunk.content) process.stdout.write(chunk.content);
 }
+```
+
+### Multi-turn context with `messages`
+
+```ts
+const reply = await client.chat.send("And for pediatric patients?", {
+  messages: [
+    { role: "user", content: "Adult atropine dose for bradycardia?" },
+    { role: "assistant", content: "1 mg IV/IO q3-5min, max 3 mg." }
+  ]
+});
+```
+
+Notes:
+- `messages` and `conversationHx` are legacy/new history inputs; when both are set, SDK sends `messages`.
+- Current user turn stays in `content`.
+- `orgId` can be a single string or a string array for multi-Pod fan-out.
+
+## Metadata
+
+Fetch the canonical state/scope reference data that `/chat` accepts:
+
+```ts
+const metadata = await client.metadata.statesAndScopes();
+
+console.log(metadata.default_state);
+console.log(metadata.default_scope);
+console.log(metadata.scopes_by_state[metadata.default_state]);
 ```
 
 ## Documents
@@ -133,6 +181,10 @@ Notes:
 - `documents[].id` is not guaranteed by this endpoint.
 - SDK normalization ensures `documents[].download_url` falls back from `presigned_url`.
 - Presigned URLs are time-limited (`url_expires_in`, commonly `3600` seconds).
+- `documents.version(orgId)` mirrors current API fields (`current_version`, `job_id`, `s3_folder`, `updated_at`).
+- `documents.job(jobId)` exposes structured progress (`total_documents`, `total_pages`, `processed_pages`).
+- `documents.delete(orgId)` and `documents.deleteVersion(orgId, version)` return `{ success, org_id?, version?, message? }`.
+- `documents.deleteVersion(orgId, version)` accepts string or numeric version identifiers.
 
 ### Upload files
 
@@ -156,6 +208,8 @@ const status = await client.documents.upload(
 console.log(status.status);
 ```
 
+Inline upload data accepts `Uint8Array`, Node `Buffer`, `ArrayBuffer`, or `Blob`.
+
 ## Error Handling
 
 ```ts
@@ -163,7 +217,7 @@ import {
   IncheckAuthenticationError,
   IncheckRateLimitError,
   IncheckValidationError
-} from "incheck-nodejs";
+} from "@incheckai/sdk";
 
 try {
   await client.chat.create({ content: "Hello" });
