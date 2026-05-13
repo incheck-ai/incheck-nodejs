@@ -6,6 +6,7 @@ import {
   IncheckValidationError
 } from "../errors/index.js";
 import type {
+  DeleteResponse,
   DocumentListResponse,
   FileSpec,
   InlineUploadFile,
@@ -13,6 +14,7 @@ import type {
   OrgInfo,
   OrgListResponse,
   RequestOptions,
+  UpdateInitiated,
   UploadCompleted,
   UploadInitiated,
   UploadOptions,
@@ -154,10 +156,10 @@ export class DocumentsResource {
     filenames: string[],
     batchSize = 6,
     options?: RequestOptions
-  ): Promise<UploadInitiated> {
+  ): Promise<UpdateInitiated> {
     this.assertOrgId(orgId);
     this.assertFileNames(filenames);
-    return this.http.request<UploadInitiated>({
+    return this.http.request<UpdateInitiated>({
       method: "PUT",
       path: `/documents/orgs/${encodeURIComponent(orgId)}/documents/initiate`,
       body: { filenames, batch_size: batchSize },
@@ -221,22 +223,31 @@ export class DocumentsResource {
     });
   }
 
-  async deleteVersion(orgId: string, version: number, options?: RequestOptions): Promise<{ deleted: boolean }> {
+  async deleteVersion(
+    orgId: string,
+    version: string | number,
+    options?: RequestOptions
+  ): Promise<DeleteResponse> {
     this.assertOrgId(orgId);
-    return this.http.request<{ deleted: boolean }>({
+    if (version === null || version === undefined || String(version).trim() === "") {
+      throw new IncheckValidationError("version must be a non-empty string or number");
+    }
+    const response = await this.http.request<Partial<DeleteResponse>>({
       method: "DELETE",
-      path: `/documents/orgs/${encodeURIComponent(orgId)}/versions/${version}`,
+      path: `/documents/orgs/${encodeURIComponent(orgId)}/versions/${encodeURIComponent(String(version))}`,
       options
     });
+    return this.normalizeDeleteResponse(response);
   }
 
-  async delete(orgId: string, options?: RequestOptions): Promise<{ deleted: boolean }> {
+  async delete(orgId: string, options?: RequestOptions): Promise<DeleteResponse> {
     this.assertOrgId(orgId);
-    return this.http.request<{ deleted: boolean }>({
+    const response = await this.http.request<Partial<DeleteResponse>>({
       method: "DELETE",
       path: `/documents/orgs/${encodeURIComponent(orgId)}`,
       options
     });
+    return this.normalizeDeleteResponse(response);
   }
 
   async upload(
@@ -310,12 +321,31 @@ export class DocumentsResource {
       if (!inline.filename) {
         throw new IncheckValidationError("Inline file requires filename");
       }
-      if (!inline.data || inline.data.length === 0) {
+      const data = await this.normalizeInlineData(inline.filename, inline.data);
+      if (data.length === 0) {
         throw new IncheckValidationError(`File is empty: ${inline.filename}`);
       }
-      normalized.push({ filename: inline.filename, data: inline.data });
+      normalized.push({ filename: inline.filename, data });
     }
     return normalized;
+  }
+
+  private async normalizeInlineData(filename: string, data: InlineUploadFile["data"]): Promise<Uint8Array> {
+    if (!data) {
+      throw new IncheckValidationError(`File is empty: ${filename}`);
+    }
+    if (data instanceof Blob) {
+      return new Uint8Array(await data.arrayBuffer());
+    }
+    if (data instanceof ArrayBuffer) {
+      return new Uint8Array(data);
+    }
+    if (ArrayBuffer.isView(data)) {
+      return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    }
+    throw new IncheckValidationError(
+      `Unsupported inline file data for ${filename}; expected Uint8Array, Buffer, ArrayBuffer, or Blob`
+    );
   }
 
   private async uploadToPresignedUrl(
@@ -358,6 +388,13 @@ export class DocumentsResource {
     return {
       url: urlCandidate,
       fields: fieldsCandidate as Record<string, string>
+    };
+  }
+
+  private normalizeDeleteResponse(response: Partial<DeleteResponse> | null | undefined): DeleteResponse {
+    return {
+      ...(response ?? {}),
+      success: response?.success ?? true
     };
   }
 

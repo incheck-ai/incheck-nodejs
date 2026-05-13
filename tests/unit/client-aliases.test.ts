@@ -6,4 +6,10 @@ describe("Client aliases", () => {
     expect(Client).toBe(IncheckClient);
     expect(AsyncClient).toBe(IncheckClient);
   });
+
+  it("exposes metadata resource on the client", () => {
+    const client = new IncheckClient({ apiKey: "test-key" });
+    expect(client.metadata).toBeDefined();
+    expect(typeof client.metadata.statesAndScopes).toBe("function");
+  });
 });

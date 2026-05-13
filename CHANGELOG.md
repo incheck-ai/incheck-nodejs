@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Added `metadata` resource on `Client` / `IncheckClient` / `AsyncClient`.
+- Added `client.metadata.statesAndScopes()` for `GET /states-and-scopes`.
+- Added `StateOrScope` and `StatesAndScopesResponse` type exports.
+- Added chat `messages` request support via `ChatRequestOptions.messages`.
+- Added multi-Pod chat support: `ChatRequestOptions.orgId` now accepts `string | string[]`.
+
+### Changed
+
+- README now documents metadata usage.
+- README error-handling import now references `@incheckai/sdk`.
+- Chat payload builder now prefers `messages` over `conversation_hx` when both are provided.
+- Chat payload builder now omits `org_id` when `orgId` is an empty list.
+- Updated document/job/version type shapes to match current Python/live API fields.
+- `PresignedUpload` type now reflects both conventions: `url`/`fields` and `upload_url`/`upload_fields`.
+- README now includes complete chat option semantics for parity clarity.
+
 ## [0.1.5] - 2026-05-12
 
 ### Fixed

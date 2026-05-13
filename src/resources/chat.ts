@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { IncheckError } from "../errors/index.js";
+import { IncheckError, IncheckValidationError } from "../errors/index.js";
 import type {
   ChatCompletionRequest,
   ChatCompletionResponse,
@@ -14,6 +14,13 @@ const DEFAULT_STATE = "Massachusetts";
 
 export class ChatResource {
   constructor(private readonly http: HttpTransport) {}
+
+  async send(
+    content: string,
+    options?: ChatRequestOptions
+  ): Promise<ChatCompletionResponse> {
+    return this.create({ content, options });
+  }
 
   async create(payload: ChatCompletionRequest): Promise<ChatCompletionResponse> {
     const response = await this.http.requestRaw({
@@ -107,15 +114,54 @@ export class ChatResource {
       conversation_id: conversationId,
       streaming,
       scope: options?.scope ?? DEFAULT_SCOPE,
-      state: options?.state ?? DEFAULT_STATE,
-      conversation_hx: options?.conversationHx
+      state: options?.state ?? DEFAULT_STATE
     };
 
-    if (options?.orgId) {
-      payload.org_id = options.orgId;
+    const messages = this.normalizeMessages(options?.messages);
+    if (messages.length > 0) {
+      payload.messages = messages;
+    } else if (options?.conversationHx !== undefined) {
+      payload.conversation_hx = options.conversationHx;
+    }
+
+    if (this.shouldIncludeOrgId(options?.orgId)) {
+      payload.org_id = options?.orgId;
     }
 
     return payload;
+  }
+
+  private normalizeMessages(messages: ChatRequestOptions["messages"]): Array<{ role: "user" | "assistant"; content: string }> {
+    if (!Array.isArray(messages) || messages.length === 0) {
+      return [];
+    }
+
+    return messages.map((m, index) => {
+      if (!m || typeof m !== "object") {
+        throw new IncheckValidationError(
+          `messages[${index}] must be an object with role and content`
+        );
+      }
+      if (m.role !== "user" && m.role !== "assistant") {
+        throw new IncheckValidationError(
+          `messages[${index}].role must be "user" or "assistant"`
+        );
+      }
+      if (typeof m.content !== "string") {
+        throw new IncheckValidationError(`messages[${index}].content must be a string`);
+      }
+      return { role: m.role, content: m.content };
+    });
+  }
+
+  private shouldIncludeOrgId(orgId: ChatRequestOptions["orgId"]): boolean {
+    if (!orgId) {
+      return false;
+    }
+    if (Array.isArray(orgId)) {
+      return orgId.length > 0;
+    }
+    return true;
   }
 
   private *parseSseText(text: string): Iterable<StreamChatChunk> {
