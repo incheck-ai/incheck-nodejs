@@ -1,6 +1,13 @@
 # InCheck Node.js SDK
 
-TypeScript-first Node.js SDK for InCheck AI APIs.
+The official Typescript NodeJS SDK for the [InCheck AI](https://incheck.ai) platform.
+Two operating modes, one client, typed end-to-end:
+
+- **EMS mode** — ask the model an EMS protocol question. No setup
+  required beyond an API key.
+- **Unified mode** — onboard one or more documents into a **Pod** (one
+  Pod per `org_id`), then chat against that Pod and the answers are
+  grounded in *your* content.
 
 ## Install
 
